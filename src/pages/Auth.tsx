@@ -34,11 +34,16 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [signupName, setSignupName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
 
   // Phone OTP fields
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  
+  // Signup OTP fields
+  const [signupOtpSent, setSignupOtpSent] = useState(false);
+  const [signupOtpCode, setSignupOtpCode] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +85,7 @@ const Auth = () => {
       emailSchema.parse(signupEmail);
       passwordSchema.parse(signupPassword);
       nameSchema.parse(signupName);
+      phoneSchema.parse(signupPhone);
 
       if (signupPassword !== signupConfirmPassword) {
         toast.error("Passwords do not match");
@@ -94,15 +100,9 @@ const Auth = () => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email: signupEmail,
-      password: signupPassword,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          full_name: signupName,
-        },
-      },
+    // Send OTP to phone number for verification
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: signupPhone,
     });
 
     setIsLoading(false);
@@ -110,8 +110,52 @@ const Auth = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Account created! Please verify your email to continue.");
-      navigate("/verify-email");
+      toast.success("OTP sent to your phone! Please verify to complete signup.");
+      setSignupOtpSent(true);
+    }
+  };
+
+  const handleVerifySignupOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (signupOtpCode.length !== 6) {
+      toast.error("Please enter a 6-digit OTP code");
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Verify OTP
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      phone: signupPhone,
+      token: signupOtpCode,
+      type: 'sms',
+    });
+
+    if (otpError) {
+      setIsLoading(false);
+      toast.error(otpError.message);
+      return;
+    }
+
+    // Update user profile with email and full name
+    if (otpData.user) {
+      const { error: updateError } = await supabase.auth.updateUser({
+        email: signupEmail,
+        password: signupPassword,
+        data: {
+          full_name: signupName,
+        },
+      });
+
+      setIsLoading(false);
+
+      if (updateError) {
+        toast.error(updateError.message);
+      } else {
+        toast.success("Account created successfully! Welcome to Wanderer!");
+        navigate("/");
+      }
     }
   };
 
@@ -348,62 +392,117 @@ const Auth = () => {
 
               {/* SIGNUP TAB */}
               <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Juan Dela Cruz"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirm-password">Re-enter Password</Label>
-                    <Input
-                      id="signup-confirm-password"
-                      type="password"
-                      placeholder="••••••"
-                      value={signupConfirmPassword}
-                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Lock className="mr-2 h-4 w-4 animate-spin" />
-                        Creating account...
-                      </>
-                    ) : (
-                      "Create Account"
-                    )}
-                  </Button>
-                </form>
+                {!signupOtpSent ? (
+                  <form onSubmit={handleSignup} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-name">Full Name</Label>
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="Juan Dela Cruz"
+                        value={signupName}
+                        onChange={(e) => setSignupName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-phone">Phone Number</Label>
+                      <Input
+                        id="signup-phone"
+                        type="tel"
+                        placeholder="+639123456789"
+                        value={signupPhone}
+                        onChange={(e) => setSignupPhone(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Format: +63XXXXXXXXXX (Philippine mobile number)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm-password">Re-enter Password</Label>
+                      <Input
+                        id="signup-confirm-password"
+                        type="password"
+                        placeholder="••••••"
+                        value={signupConfirmPassword}
+                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Phone className="mr-2 h-4 w-4 animate-spin" />
+                          Sending OTP...
+                        </>
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifySignupOtp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-otp-code">Enter 6-Digit OTP</Label>
+                      <Input
+                        id="signup-otp-code"
+                        type="text"
+                        placeholder="123456"
+                        maxLength={6}
+                        value={signupOtpCode}
+                        onChange={(e) => setSignupOtpCode(e.target.value.replace(/\D/g, ''))}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        OTP sent to {signupPhone}
+                      </p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Lock className="mr-2 h-4 w-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        "Verify & Complete Signup"
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setSignupOtpSent(false);
+                        setSignupOtpCode("");
+                      }}
+                    >
+                      Change Phone Number
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
