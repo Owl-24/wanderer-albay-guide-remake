@@ -398,6 +398,7 @@ export type Database = {
           municipality: string | null
           name: string
           rating: number | null
+          spot_type: string[] | null
           updated_at: string
         }
         Insert: {
@@ -414,6 +415,7 @@ export type Database = {
           municipality?: string | null
           name: string
           rating?: number | null
+          spot_type?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -430,6 +432,7 @@ export type Database = {
           municipality?: string | null
           name?: string
           rating?: number | null
+          spot_type?: string[] | null
           updated_at?: string
         }
         Relationships: []
