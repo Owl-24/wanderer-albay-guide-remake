@@ -1,8 +1,31 @@
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Card } from "@/components/ui/card";
 import Map from "@/components/Map";
 
 const MapPage = () => {
+  const [searchParams] = useSearchParams();
+  const [autoDestination, setAutoDestination] = useState<{
+    lat: number;
+    lng: number;
+    name?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    const name = searchParams.get("name");
+
+    if (lat && lng) {
+      setAutoDestination({
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+        name: name || undefined,
+      });
+    }
+  }, [searchParams]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -13,13 +36,15 @@ const MapPage = () => {
             Interactive <span className="text-primary">Map</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Explore all tourist destinations across Albay on an interactive, free map powered by OpenStreetMap
+            {autoDestination?.name 
+              ? `Navigate to ${autoDestination.name}` 
+              : "Explore all tourist destinations across Albay on an interactive, free map powered by OpenStreetMap"}
           </p>
         </div>
 
         <div className="h-[600px]">
           <Card className="overflow-hidden h-full">
-            <Map />
+            <Map autoDestination={autoDestination} />
           </Card>
         </div>
       </div>

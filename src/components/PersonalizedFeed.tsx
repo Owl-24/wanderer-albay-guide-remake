@@ -278,12 +278,20 @@ const PersonalizedFeed = ({ userId }: PersonalizedFeedProps) => {
         return;
       }
 
-      const itemData = {
+      // Include complete data with coordinates for spots
+      const itemData: any = {
         id: item.id,
         name: item.name,
         location: item.location,
+        description: item.description,
         type: type
       };
+
+      // Add coordinates for tourist spots and accommodations
+      if ('latitude' in item && 'longitude' in item) {
+        itemData.latitude = item.latitude;
+        itemData.longitude = item.longitude;
+      }
 
       if (existingItinerary) {
         // Update existing itinerary

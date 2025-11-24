@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Signup from "./pages/Signup";
+import VerifyOTP from "./pages/VerifyOTP";
 import Explore from "./pages/Explore";
 import Itinerary from "./pages/Itinerary";
 import Dashboard from "./pages/Dashboard";
@@ -30,6 +32,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/verify-otp" element={<VerifyOTP />} />
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />

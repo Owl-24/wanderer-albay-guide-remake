@@ -100,7 +100,19 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 5% 96%;
     --sidebar-border: 240 4% 16%;
     --sidebar-ring: 186 78% 55%;
-  }
+
+/* Dropdown, popover, menus */
+[data-radix-popper-content-wrapper] {
+  z-index: 99999 !important;
+}
+
+/* Dialog, AlertDialog, Popover, Drawer, Sheet, etc. */
+[data-radix-portal] {
+  z-index: 99999 !important;
+}
+.leaflet-container {
+  z-index: 1 !important;
+}
 }
 
 @layer base {
@@ -111,4 +123,5 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
 }
